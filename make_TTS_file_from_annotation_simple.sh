@@ -58,23 +58,27 @@ GFF2GFF=$rootDir/gff2gff.awk
 # a. Extract most 3' exons of transcripts
 #########################################
 echo I am extracting the most 3\' exons of transcripts >&2
-awk '(($3=="exon")&&(($7=="+")||($7=="-")))' $annotation | awk -f $MAKEOK | awk -v fldno=12 -f $EXTRACT3p > $annotbase\_exons_most3p.gff
+echo "make_TTS... line 61" >> debug_time.log
+time (awk '(($3=="exon")&&(($7=="+")||($7=="-")))' $annotation | awk -f $MAKEOK | awk -v fldno=12 -f $EXTRACT3p > $annotbase\_exons_most3p.gff) &>> debug_time.log
 echo done >&2
 
 # b. Then the most 3' bp of each transcript for each gene
 #########################################################
 echo I am extracting the most 3\' bp of each transcript for each gene >&2
-awk '{($7=="+") ? ttspos=$5 : ttspos=$4; print $1, ".", "TTS", ttspos, ttspos, ".", $7, ".", "gene_id", $10, "tr", $12}' $annotbase\_exons_most3p.gff | awk -f $GFF2GFF > $annotbase\_tts_sites.gff
+echo "make_TTS... line 68" >> debug_time.log
+time (awk '{($7=="+") ? ttspos=$5 : ttspos=$4; print $1, ".", "TTS", ttspos, ttspos, ".", $7, ".", "gene_id", $10, "tr", $12}' $annotbase\_exons_most3p.gff | awk -f $GFF2GFF > $annotbase\_tts_sites.gff) &>> debug_time.log
 echo done >&2
 
 # c. Finally collapse per gene
 ##############################
 echo I am collapsing all TTSs per gene >&2
-cat $annotbase\_tts_sites.gff | awk -v to=10 -f $CUTGFF | sort -n | uniq -c | awk '{$1=""; print $0}' | awk -f $GFF2GFF | awk -v fileRef=$annotbase\_tts_sites.gff 'BEGIN{while (getline < fileRef >0){split($12,a,"\""); trlist[$1":"$4":"$5":"$7,$10]=(trlist[$1":"$4":"$5":"$7,$10])(a[2])(",");}} {$11="trlist"; $12="\""(trlist[$1":"$4":"$5":"$7,$10])"\"\;"; print $0}' | awk -f $GFF2GFF > $annotbase\_tts_sites_nr.gff
+echo "make_TTS... line 75" >> debug_time.log
+time (cat $annotbase\_tts_sites.gff | awk -v to=10 -f $CUTGFF | sort -n | uniq -c | awk '{$1=""; print $0}' | awk -f $GFF2GFF | awk -v fileRef=$annotbase\_tts_sites.gff 'BEGIN{while (getline < fileRef >0){split($12,a,"\""); trlist[$1":"$4":"$5":"$7,$10]=(trlist[$1":"$4":"$5":"$7,$10])(a[2])(",");}} {$11="trlist"; $12="\""(trlist[$1":"$4":"$5":"$7,$10])"\"\;"; print $0}' | awk -f $GFF2GFF > $annotbase\_tts_sites_nr.gff) &>> debug_time.log
 echo done >&2
 
 # d. Clean
 ##########
 echo I am cleaning >&2
-rm $annotbase\_exons_most3p.gff
+echo "make_TTS... line 82" >> debug_time.log
+time (rm $annotbase\_exons_most3p.gff) &>> debug_time.log
 echo done >&2

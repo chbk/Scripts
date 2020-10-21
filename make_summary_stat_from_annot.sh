@@ -14,7 +14,7 @@ set -Eeuxo pipefail
 #   * $b2\_distinct_exons.txt: the file of distinct exon coordinates (1/gff based)
 #   * $b2\_distinct_introns.txt: the file of distinct intron coordinates (1/gff based)
 #   * $b2\_distinct_introns_bed.txt: the file of distinct intron coordinates (bed based)
-#   * $b2\_distinct_introns_minus1nteachside.txt: the file of distinct exon-exon junction (1/gff based); 
+#   * $b2\_distinct_introns_minus1nteachside.txt: the file of distinct exon-exon junction (1/gff based);
 #     junction coordinates can be obtained by going extending the intron coord by 1 nt on each side, which explains the current name (should be changed at one point?)
 #   * $b2\_trids.txt: the file of transcript ids
 #   * $b2\_gnids.txt: the file of gene ids
@@ -56,7 +56,7 @@ rootDir="`( cd \"$path\" && pwd )`" # absolute path
 
 annot=$1
 b=`basename ${annot%.gff}`
-b2=${b%.gtf} 
+b2=${b%.gtf}
 
 # Programs
 ##########
@@ -68,24 +68,26 @@ STATS=$rootDir/stats.sh
 
 # Make necesary gff files for the stats
 echo Making the necesary gff files for the stats >&2
-awk '$3=="exon"' $annot | awk -f $MAKEOK | awk -f $GFF2GFF | sort -k12,12 -k4,4n -k5,5n > $b2\_exons_sorted_by_tr.gff
-awk -v fldgn=10 -v fldtr=12 -f $INTRONS $b2\_exons_sorted_by_tr.gff | awk -f $GFF2GFF > $b2\_introns.gff
-awk -v toadd=transcript -v fldno=12 -f $BOUNDARIES $b2\_exons_sorted_by_tr.gff | awk -v fileRef=$b2\_exons_sorted_by_tr.gff 'BEGIN{while (getline < fileRef >0){gnid[$12]=$10}} {print $1, $2, $3, $4, $5, $6, $7, $8, "gene_id", gnid[$10], $9, $10}' | awk -f $GFF2GFF > $b2\_transcripts.gff
-awk -v toadd=gene -v fldno=10 -f $BOUNDARIES $b2\_exons_sorted_by_tr.gff | awk '{print $0, "transcript_id", $NF}' | awk -f $GFF2GFF > $b2\_genes.gff
+echo "make_summary... line 71" >> debug_time.log
+time (awk '$3=="exon"' $annot | awk -f $MAKEOK | awk -f $GFF2GFF | sort -k12,12 -k4,4n -k5,5n > $b2\_exons_sorted_by_tr.gff) &>> debug_time.log
+time (awk -v fldgn=10 -v fldtr=12 -f $INTRONS $b2\_exons_sorted_by_tr.gff | awk -f $GFF2GFF > $b2\_introns.gff) &>> debug_time.log
+time (awk -v toadd=transcript -v fldno=12 -f $BOUNDARIES $b2\_exons_sorted_by_tr.gff | awk -v fileRef=$b2\_exons_sorted_by_tr.gff 'BEGIN{while (getline < fileRef >0){gnid[$12]=$10}} {print $1, $2, $3, $4, $5, $6, $7, $8, "gene_id", gnid[$10], $9, $10}' | awk -f $GFF2GFF > $b2\_transcripts.gff) &>> debug_time.log
+time (awk -v toadd=gene -v fldno=10 -f $BOUNDARIES $b2\_exons_sorted_by_tr.gff | awk '{print $0, "transcript_id", $NF}' | awk -f $GFF2GFF > $b2\_genes.gff) &>> debug_time.log
 echo done >&2
 
 # Make necesary txt files for the simple stats and distributions
 echo Making the necesary txt files for the simple stats >&2
-awk '{print $1":"$4":"$5":"$7}' $b2\_exons_sorted_by_tr.gff | sort | uniq > $b2\_distinct_exons.txt
-awk '{print $1":"$4":"$5":"$7}' $b2\_introns.gff | sort | uniq > $b2\_distinct_introns.txt
-awk '{print $1":"($4-1)":"$5":"$7}' $b2\_introns.gff | sort | uniq > $b2\_distinct_introns_bed.txt
-awk '{print $1":"($4-1)":"($5+1)":"$7}' $b2\_introns.gff | sort | uniq > $b2\_distinct_introns_minus1nteachside.txt
-awk '{split($12,a,"\""); print a[2]}' $b2\_transcripts.gff | sort | uniq > $b2\_trids.txt
-awk '{split($10,a,"\""); print a[2]}' $b2\_genes.gff | sort | uniq > $b2\_gnids.txt
+echo "make_summary... line 80" >> debug_time.log
+time (awk '{print $1":"$4":"$5":"$7}' $b2\_exons_sorted_by_tr.gff | sort | uniq > $b2\_distinct_exons.txt) &>> debug_time.log
+time (awk '{print $1":"$4":"$5":"$7}' $b2\_introns.gff | sort | uniq > $b2\_distinct_introns.txt) &>> debug_time.log
+time (awk '{print $1":"($4-1)":"$5":"$7}' $b2\_introns.gff | sort | uniq > $b2\_distinct_introns_bed.txt) &>> debug_time.log
+time (awk '{print $1":"($4-1)":"($5+1)":"$7}' $b2\_introns.gff | sort | uniq > $b2\_distinct_introns_minus1nteachside.txt) &>> debug_time.log
+time (awk '{split($12,a,"\""); print a[2]}' $b2\_transcripts.gff | sort | uniq > $b2\_trids.txt) &>> debug_time.log
+time (awk '{split($10,a,"\""); print a[2]}' $b2\_genes.gff | sort | uniq > $b2\_gnids.txt) &>> debug_time.log
 echo done >&2
 echo Making the necesary txt files for the distributions >&2
-awk '{nbex[$12]++}END{for(t in nbex){print t, nbex[t]}}' $b2\_exons_sorted_by_tr.gff > $b2\_trid_nbex.txt
-awk '{seen[$12,$10]++; if(seen[$12,$10]==1){nbtr[$10]++}}END{for(g in nbtr){print g, nbtr[g]}}' $b2\_exons_sorted_by_tr.gff > $b2\_gnid_nbtr.txt
+time (awk '{nbex[$12]++}END{for(t in nbex){print t, nbex[t]}}' $b2\_exons_sorted_by_tr.gff > $b2\_trid_nbex.txt) &>> debug_time.log
+time (awk '{seen[$12,$10]++; if(seen[$12,$10]==1){nbtr[$10]++}}END{for(g in nbtr){print g, nbtr[g]}}' $b2\_exons_sorted_by_tr.gff > $b2\_gnid_nbtr.txt) &>> debug_time.log
 echo done >&2
 
 # Make the simple stats and distributions
@@ -101,14 +103,17 @@ printf $nbex"\t"$nbdistinctex"\t"$nbtr"\t"$nbgn"\t"$nbintrons"\t"$nbdistinctintr
 echo done >&2
 echo Making the distributions >&2
 printf "distribution of the number of exons per transcript\n"
-$STATS $b2\_trid_nbex.txt 2 
+echo "make_summary... line 106" >> debug_time.log
+time ($STATS $b2\_trid_nbex.txt 2) &>> debug_time.log
 printf "distribution of the number of transcripts per gene\n"
-$STATS $b2\_gnid_nbtr.txt 2
+echo "make_summary... line 109" >> debug_time.log
+time ($STATS $b2\_gnid_nbtr.txt 2) &>> debug_time.log
 echo done >&2
 
 # Clean
 echo Cleaning >&2
-cat $b2\_exons_sorted_by_tr.gff $b2\_introns.gff $b2\_transcripts.gff $b2\_genes.gff > $b2\_complete.gff
-rm $b2\_exons_sorted_by_tr.gff $b2\_introns.gff $b2\_transcripts.gff $b2\_genes.gff
-rm $b2\_distinct_exons.txt $b2\_distinct_introns.txt $b2\_distinct_introns_bed.txt $b2\_distinct_introns_minus1nteachside.txt $b2\_trids.txt $b2\_gnids.txt 
+echo "make_summary... line 115" >> debug_time.log
+time (cat $b2\_exons_sorted_by_tr.gff $b2\_introns.gff $b2\_transcripts.gff $b2\_genes.gff > $b2\_complete.gff) &>> debug_time.log
+time (rm $b2\_exons_sorted_by_tr.gff $b2\_introns.gff $b2\_transcripts.gff $b2\_genes.gff) &>> debug_time.log
+time (rm $b2\_distinct_exons.txt $b2\_distinct_introns.txt $b2\_distinct_introns_bed.txt $b2\_distinct_introns_minus1nteachside.txt $b2\_trids.txt $b2\_gnids.txt) &>> debug_time.log
 echo done >&2

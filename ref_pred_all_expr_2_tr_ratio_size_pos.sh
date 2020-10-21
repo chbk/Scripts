@@ -5,7 +5,7 @@ set -Eexo pipefail
 ##########################################
 # takes as input:
 #################
-# - a reference gene annotation file in gtf (such as the ones provided by ensembl) or gff2 format 
+# - a reference gene annotation file in gtf (such as the ones provided by ensembl) or gff2 format
 # - a predicted gene annotation file in gtf or gff2 format
 # - a matrix of transcript TPM values in a set of samples (tsv file with header whose columns are transcript_id, gene_id and TPM values in a set of samples)
 #   this file should contain transcript ids from the reference and from the predicted gene annotation
@@ -87,17 +87,18 @@ COMPARE=$rootdir/compare_multiple_trsets_wrt_reftrset.sh
 
 # 1. Make the two expression filtered gff files and hard copy the 4*2 files given as input to analyse_transcript_models in the 4 directories where it is run
 #############################################################################################################################################################
+echo "ref_pred_all... line 90" >> debug_time.log
 cd $outdir
-awk -v mexpr=0.1 -v msamp=2 -v fstexpr=3 -v fileRef=$tr -f $EXPRFILTER $ref | awk -f $GFFOK > ref.annot.tpm0.1.2samples.exons.gff
-awk -v mexpr=0.1 -v msamp=2 -v fstexpr=3 -v fileRef=$tr -f $EXPRFILTER $str | awk -f $GFFOK > stringtie.annot.tpm0.1.2samples.exons.gff
-mkdir -p $outdir/ref
-mkdir -p $outdir/ref_expr
-mkdir -p $outdir/string
-mkdir -p $outdir/string_expr
-cp $ref $outdir/ref
-cp ref.annot.tpm0.1.2samples.exons.gff $ref $outdir/ref_expr
-cp $str $ref $outdir/string
-cp stringtie.annot.tpm0.1.2samples.exons.gff $ref $outdir/string_expr
+time (awk -v mexpr=0.1 -v msamp=2 -v fstexpr=3 -v fileRef=$tr -f $EXPRFILTER $ref | awk -f $GFFOK > ref.annot.tpm0.1.2samples.exons.gff) &>> debug_time.log
+time (awk -v mexpr=0.1 -v msamp=2 -v fstexpr=3 -v fileRef=$tr -f $EXPRFILTER $str | awk -f $GFFOK > stringtie.annot.tpm0.1.2samples.exons.gff) &>> debug_time.log
+time (mkdir -p $outdir/ref) &>> debug_time.log
+time (mkdir -p $outdir/ref_expr) &>> debug_time.log
+time (mkdir -p $outdir/string) &>> debug_time.log
+time (mkdir -p $outdir/string_expr) &>> debug_time.log
+time (cp $ref $outdir/ref) &>> debug_time.log
+time (cp ref.annot.tpm0.1.2samples.exons.gff $ref $outdir/ref_expr) &>> debug_time.log
+time (cp $str $ref $outdir/string) &>> debug_time.log
+time (cp stringtie.annot.tpm0.1.2samples.exons.gff $ref $outdir/string_expr) &>> debug_time.log
 
 # 2. Run the analyse transcript script on the 4 sets (ref gene, ref gene tpm filter, string gene, string gene tpm filter)
 ##########################################################################################################################
@@ -107,23 +108,27 @@ cp stringtie.annot.tpm0.1.2samples.exons.gff $ref $outdir/string_expr
 # !!! each of them take 3 minutes !!!
 # a. for ref
 ############
+echo "ref_pred_all... line 111" >> debug_time.log
 cd $outdir/ref
-$ANALYSE $refbase $refbase 2> analyse_transcript_models_ref.err
+time ($ANALYSE $refbase $refbase 2> analyse_transcript_models_ref.err) &>> debug_time.log
 
 # b. for ref expr
 #################
 cd $outdir/ref_expr
-$ANALYSE ref.annot.tpm0.1.2samples.exons.gff $refbase 2> analyse_transcript_models_ref_expr.err
+echo "ref_pred_all... line 118" >> debug_time.log
+time ($ANALYSE ref.annot.tpm0.1.2samples.exons.gff $refbase 2> analyse_transcript_models_ref_expr.err) &>> debug_time.log
 
 # c. for stringtie
 ##################
 cd $outdir/string
-$ANALYSE $strbase $refbase 2> analyse_transcript_models_string.err
+echo "ref_pred_all... line 124" >> debug_time.log
+time ($ANALYSE $strbase $refbase 2> analyse_transcript_models_string.err) &>> debug_time.log
 
 # d. for stringtie expr
 ########################
 cd $outdir/string_expr
-$ANALYSE stringtie.annot.tpm0.1.2samples.exons.gff $refbase 2> analyse_transcript_models_string_expr.err
+echo "ref_pred_all... line 130" >> debug_time.log
+time ($ANALYSE stringtie.annot.tpm0.1.2samples.exons.gff $refbase 2> analyse_transcript_models_string_expr.err) &>> debug_time.log
 
 # 3. produce tsv file of 4 sets to be used by the gathering info script
 #######################################################################
@@ -139,7 +144,8 @@ printf "string_expr\t"$outdir"/string_expr/stringtie.annot.tpm0.1.2samples.exons
 
 # 4. run the gather info script
 ################################
-$COMPARE $ref trsets.tsv 2> compare_multiple_trsets_wrt_reftrset.err
+echo "ref_pred_all... line 147" >> debug_time.log
+time ($COMPARE $ref trsets.tsv 2> compare_multiple_trsets_wrt_reftrset.err) &>> debug_time.log
 
 
 # 5. Erase all intermediate directories

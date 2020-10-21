@@ -4,7 +4,7 @@ set -Eeuxo pipefail
 # compare_multiple_trsets_wrt_reftrset.sh
 # script to gather the analysis results of the script analyse_transcript_models.sh in order to generate
 # several tables and plots for a presentation that aims at comparing several transcript sets (typically
-# predicted transcripts from a givem rnaseq sample) to a reference set of transcripts (typically the 
+# predicted transcripts from a givem rnaseq sample) to a reference set of transcripts (typically the
 # transcripts that we expect to be present in this rnaseq sample)
 
 # On March 27th 2020, all calls to _nbex.tsv file replaced by _nbex_intermclass.tsv file
@@ -14,12 +14,12 @@ set -Eeuxo pipefail
 ################
 # - a gtf or gff version 2 file containing the reference set of transcripts (typically the transcripts
 #   we expect to be present in the rnaseq sample on which many transcript modellers have been run)
-#   This file has to contain at least exon rows and should have the gene_id and transcript_id first in 
+#   This file has to contain at least exon rows and should have the gene_id and transcript_id first in
 #   the 9th field. This file should be the same as the one given as input to analyse_transcript_models.sh
 #   for each prediction set.
 # - a 2 column tsv file with header that lists several predicted transcript sets with the first column
 #   indicating the source (name of the program for example) and the second column indicating the absolute
-#   path to the transcript model gtf or gff version 2 file, and where we expect the outputs of 
+#   path to the transcript model gtf or gff version 2 file, and where we expect the outputs of
 #   analyse_transcript_models.sh are with respect to this transcript set. Note that this file could include
 #   the reference set itself since we usually want to compare the predicted transcripts with respect to it
 
@@ -114,7 +114,8 @@ echo "done" >&2
 # List the ids of the spliced transcripts in the reference, making sure the transcript_id is in the 12th field by applying $GFFOK before
 ########################################################################################################################################
 echo "I am listing the ids of the spliced transcripts in the reference" >&2
-awk -f $GFFOK $ref | awk '$3=="exon"{split($12,a,"\""); nbex[a[2]]++}END{for(t in nbex){if(nbex[t]>=2){print t}}}' > $refdir/ref_spliced_tr.txt
+echo "compare_multiple... line 117" >> debug_time.log
+time (awk -f $GFFOK $ref | awk '$3=="exon"{split($12,a,"\""); nbex[a[2]]++}END{for(t in nbex){if(nbex[t]>=2){print t}}}' > $refdir/ref_spliced_tr.txt) &>> debug_time.log
 echo "done" >&2
 # ENST00000000233.5
 # 171656 (1 fields)
@@ -124,7 +125,7 @@ echo "done" >&2
 echo "I am computing some basic statistics about the basic categories of spliced transcripts with respect to the reference transcripts" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -149,7 +150,7 @@ echo "done" >&2
 echo "I am making a table with the distribution of predicted transcripts in the different classes and with respect to the reference set" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -165,11 +166,11 @@ echo "done" >&2
 echo "I am making a table of basic summary statistics for the different prediction sets" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
-awk 'NR==2' make_summary_stat_from_annot_$base.out | awk -v set=$src '{OFS="\t"; print set, $0, $1/$3, $1/$4, $2/$4, $3/$4, $5/$3, $5/$4, $6/$4}' 
+awk 'NR==2' make_summary_stat_from_annot_$base.out | awk -v set=$src '{OFS="\t"; print set, $0, $1/$3, $1/$4, $2/$4, $3/$4, $5/$3, $5/$4, $6/$4}'
 done | awk 'BEGIN{print "prediction\tnbex\tnnbdistinctex\tnbtr\tnbgn\tnbintrons\tnbdistinctintrons\tnbexpertr\tnbexpergn\tnbdistinctexpergn\tnbtrpergn\tnbintronpertr\tnbintronpergn\tnbdistinctintronpergn"}{print}' > Tables/predtrsets_basic_sumstats.tsv
 cat Tables/predtrsets_basic_sumstats.tsv >&2
 echo "done" >&2
@@ -189,7 +190,8 @@ do
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
-    awk -f $GFFOK $pred > $base.ok.gff
+    echo "compare_multiple... line 196" >> debug_time.log
+    time (awk -f $GFFOK $pred > $base.ok.gff) &>> debug_time.log
 done
 
 echo "  1. number of exons per transcript" >&2
@@ -207,7 +209,7 @@ echo "  done" >&2
 echo "  2. number of transcripts per gene" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -219,7 +221,7 @@ echo "  done" >&2
 echo "  3. exon length" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -231,7 +233,7 @@ echo "  done" >&2
 echo "  4. distinct exon length" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -243,7 +245,7 @@ echo "  done" >&2
 echo "  5. transcript 5' exon length (for spliced and stranded tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -255,7 +257,7 @@ echo "  done" >&2
 echo "  6. gene 5' exon length (for genes with spliced and stranded tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -267,7 +269,7 @@ echo "  done" >&2
 echo "  7. transcript 3' exon length (for spliced and stranded tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -279,7 +281,7 @@ echo "  done" >&2
 echo "  8. gene 3' exon length (for genes with spliced and stranded tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -291,7 +293,7 @@ echo "  done" >&2
 echo "  9. internal exon length (for spliced and stranded tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     lid=$no\_$src
     basetmp=`basename ${pred%.gtf}`
@@ -303,7 +305,7 @@ echo "  done" >&2
 echo "  10. distinct internal exon length (for spliced and stranded tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -315,7 +317,7 @@ echo "  done" >&2
 echo "  11. monoexonic transcript exon length" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -327,7 +329,7 @@ echo "  done" >&2
 echo "  12. transcript length (exons + introns) (for spliced transcripts)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -339,7 +341,7 @@ echo "  done" >&2
 echo "  13. cDNA length (exons only) (for spliced tr)" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-    WORKDIR=`dirname $pred` 
+    WORKDIR=`dirname $pred`
     cd $WORKDIR
     basetmp=`basename ${pred%.gtf}`
     base=${basetmp%.gff}
@@ -380,12 +382,12 @@ do
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
 echo $dist >&2
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
 awk -v lid=$src -v dist=$dist 'BEGIN{OFS="\t"}{tot++; if($7<=dist){tss++;} if($8<=dist){tts++;}}END{print lid, tot, tss, tss/tot*100, tts, tts/tot*100}' $base\_predtr_spliced_stranded_exact_$refbase\_correstrlist_TSS_AnnotTSSlist_TTS_AnnotTTSlist_smallerdist_TSS_TTS.txt
-done | awk -v dist=$dist 'BEGIN{OFS="\t"; print "pred_set", "nb_exact_tr", "hitting_ref_tss_"dist"bp_nb", "hitting_ref_tss_"dist"bp_pcent", "hitting_ref_tts_"dist"bp_nb", "hitting_ref_tts_"dist"bp_pcent"}{print}' > Tables/prediction_sets_nbexacttr_hitting_ref_tss_$dist\bp_nb_pcent_hitting_ref_tts_$dist\bp_nb_pcent.tsv 
+done | awk -v dist=$dist 'BEGIN{OFS="\t"; print "pred_set", "nb_exact_tr", "hitting_ref_tss_"dist"bp_nb", "hitting_ref_tss_"dist"bp_pcent", "hitting_ref_tts_"dist"bp_nb", "hitting_ref_tts_"dist"bp_pcent"}{print}' > Tables/prediction_sets_nbexacttr_hitting_ref_tss_$dist\bp_nb_pcent_hitting_ref_tts_$dist\bp_nb_pcent.tsv
 cat Tables/prediction_sets_nbexacttr_hitting_ref_tss_$dist\bp_nb_pcent_hitting_ref_tts_$dist\bp_nb_pcent.tsv >&2
 done
 echo "done" >&2
@@ -397,7 +399,7 @@ echo "done" >&2
 echo "I am computing the distribution of the smaller distance from predicted TSS to its matching refated transcript TSS for all prediction sets" >&2
 awk 'NR>=2{print $1, $2, ((NR-2)<=9 ? "0"(NR-2) : (NR-2))}' $predtrsets | while read src pred no
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -411,7 +413,7 @@ echo "done" >&2
 echo "I am making a simple table with number of stranded predicted transcripts, their genes, their individual and nr TSS and TTS" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -432,7 +434,7 @@ echo "done" >&2
 echo "I am making a sensitivity table for nr reference tss and how they are hit by any predicted tss" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -440,7 +442,7 @@ distreftss=`wc -l $refnrtss | awk '{print $1}'`
 tsshit1=`wc -l $refbase\_capped_sites_nr_with_pred_less50bp.gff | awk '{print $1}'`
 tsshit2=`wc -l $refbase\_capped_sites_nr_with_pred_less100bp.gff | awk '{print $1}'`
 tsshit3=`wc -l $refbase\_capped_sites_nr_with_pred_less500bp.gff | awk '{print $1}'`
-echo $src $distreftss $tsshit1 $tsshit2 $tsshit3 
+echo $src $distreftss $tsshit1 $tsshit2 $tsshit3
 done | awk 'BEGIN{OFS="\t"; print "pred_set", "dist_ref_tss", "tss_hit_by_pred_50bp_nb", "tss_hit_by_pred_50bp_pcent", "tss_hit_by_pred_100bp_nb", "tss_hit_by_pred_100bp_pcent", "tss_hit_by_pred_500bp_nb", "tss_hit_by_pred_500bp_pcent"} {print $1, $2, $3, $3/$2*100, $4, $4/$2*100, $5, $5/$2*100}' > Tables/prediction_sets_nrreftss_hitbypredtss_50bp_100bp_500bp_nb_pcent.tsv
 cat Tables/prediction_sets_nrreftss_hitbypredtss_50bp_100bp_500bp_nb_pcent.tsv >&2
 echo "done" >&2
@@ -452,7 +454,7 @@ echo "done" >&2
 echo "I am making a sensitivity table for nr reference tts and how they are hit by any predicted tts" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -472,7 +474,7 @@ echo "done" >&2
 echo "I am making a precision table for all distinct predicted tss with respect to the reference tss" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -480,7 +482,7 @@ distpredtss=`wc -l $base\_capped_sites_nr.gff | awk '{print $1}'`
 tsshit1=`wc -l $base\_capped_sites_nr_with_annottss_less50bp.gff | awk '{print $1}'`
 tsshit2=`wc -l $base\_capped_sites_nr_with_annottss_less100bp.gff | awk '{print $1}'`
 tsshit3=`wc -l $base\_capped_sites_nr_with_annottss_less500bp.gff | awk '{print $1}'`
-echo $src $distpredtss $tsshit1 $tsshit2 $tsshit3 
+echo $src $distpredtss $tsshit1 $tsshit2 $tsshit3
 done | awk 'BEGIN{OFS="\t"; print "pred_set", "dist_pred_tss", "tss_hit_by_pred_50bp_nb", "tss_hit_by_pred_50bp_pcent", "tss_hit_by_pred_100bp_nb", "tss_hit_by_pred_100bp_pcent", "tss_hit_by_pred_500bp_nb", "tss_hit_by_pred_500bp_pcent"} {print $1, $2, $3, $3/$2*100, $4, $4/$2*100, $5, $5/$2*100}' > Tables/prediction_sets_nrpredtss_hitbypredtss_50bp_100bp_500bp_nb_pcent.tsv
 cat Tables/prediction_sets_nrpredtss_hitbypredtss_50bp_100bp_500bp_nb_pcent.tsv >&2
 echo "done" >&2
@@ -492,7 +494,7 @@ echo "done" >&2
 echo "I am making a precision table for all distinct predicted tts with respect to the reference tts" >&2
 awk 'NR>=2{print $1, $2}' $predtrsets | while read src pred
 do
-WORKDIR=`dirname $pred` 
+WORKDIR=`dirname $pred`
 cd $WORKDIR
 basetmp=`basename ${pred%.gtf}`
 base=${basetmp%.gff}
@@ -500,7 +502,7 @@ distpredtts=`wc -l $base\_tts_sites_nr.gff | awk '{print $1}'`
 ttshit1=`wc -l $base\_tts_sites_nr_with_annottts_less50bp.gff | awk '{print $1}'`
 ttshit2=`wc -l $base\_tts_sites_nr_with_annottts_less100bp.gff | awk '{print $1}'`
 ttshit3=`wc -l $base\_tts_sites_nr_with_annottts_less500bp.gff | awk '{print $1}'`
-echo $src $distpredtts $ttshit1 $ttshit2 $ttshit3 
+echo $src $distpredtts $ttshit1 $ttshit2 $ttshit3
 done | awk 'BEGIN{OFS="\t"; print "pred_set", "dist_pred_tts", "tts_hit_by_pred_50bp_nb", "tts_hit_by_pred_50bp_pcent", "tts_hit_by_pred_100bp_nb", "tts_hit_by_pred_100bp_pcent", "tts_hit_by_pred_500bp_nb", "tts_hit_by_pred_500bp_pcent"} {print $1, $2, $3, $3/$2*100, $4, $4/$2*100, $5, $5/$2*100}' > Tables/prediction_sets_nrpredtts_hitbypredtts_50bp_100bp_500bp_nb_pcent.tsv
 cat Tables/prediction_sets_nrpredtts_hitbypredtts_50bp_100bp_500bp_nb_pcent.tsv >&2
 echo "done" >&2
@@ -511,43 +513,44 @@ echo "done" >&2
 ######################################################################################
 echo "I am making the plots for numbers and lengths of several objects across all the predictions" >&2
 echo "  1. number of exons per transcript" >&2
-$BOXPLOT Plots/ExonPerTranscript/prediction_nbexintr_forggplot.tsv prediction nb_ex_in_transcript "Number of exons per transcript" 0 20 Plots/ExonPerTranscript/prediction_nbexintr_forggplot.png
+echo "compare_multiple... line 516" >> debug_time.log
+time ($BOXPLOT Plots/ExonPerTranscript/prediction_nbexintr_forggplot.tsv prediction nb_ex_in_transcript "Number of exons per transcript" 0 20 Plots/ExonPerTranscript/prediction_nbexintr_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  2. number of transcripts per gene" >&2
-$BOXPLOT Plots/TranscriptPerGene/prediction_nbtringn_forggplot.tsv prediction nb_tr_in_gene "Number of transcripts per gene" 0 20 Plots/TranscriptPerGene/prediction_nbtringn_forggplot.png
+time ($BOXPLOT Plots/TranscriptPerGene/prediction_nbtringn_forggplot.tsv prediction nb_tr_in_gene "Number of transcripts per gene" 0 20 Plots/TranscriptPerGene/prediction_nbtringn_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  3. exon length" >&2
-$BOXPLOT Plots/ExonLength/prediction_exlg_forggplot.tsv prediction exon_length "Exon length" 0 500 Plots/ExonLength/prediction_exlg_forggplot.png
+time ($BOXPLOT Plots/ExonLength/prediction_exlg_forggplot.tsv prediction exon_length "Exon length" 0 500 Plots/ExonLength/prediction_exlg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  4. distinct exon length" >&2
-$BOXPLOT Plots/DistinctExonLength/prediction_distexlg_forggplot.tsv prediction distinct_exon_length "Distinct exon length" 0 500 Plots/DistinctExonLength/prediction_distexlg_forggplot.png
+time ($BOXPLOT Plots/DistinctExonLength/prediction_distexlg_forggplot.tsv prediction distinct_exon_length "Distinct exon length" 0 500 Plots/DistinctExonLength/prediction_distexlg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  5. transcript 5' exon length (for spliced and stranded tr)" >&2
-$BOXPLOT Plots/5pExonLength_Tr/prediction_5pexlgtr_forggplot.tsv prediction fivep_exon_length_tr "5p exon length (spliced, stranded tr)" 0 500 Plots/5pExonLength_Tr/prediction_5pexlgtr_forggplot.png
+time ($BOXPLOT Plots/5pExonLength_Tr/prediction_5pexlgtr_forggplot.tsv prediction fivep_exon_length_tr "5p exon length (spliced, stranded tr)" 0 500 Plots/5pExonLength_Tr/prediction_5pexlgtr_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  6. gene 5' exon length (for genes with spliced and stranded tr)" >&2
-$BOXPLOT Plots/5pExonLength_Gn/prediction_5pexlggn_forggplot.tsv prediction fivep_exon_length_gn "5p exon length of genes (with spl str tr)" 0 500 Plots/5pExonLength_Gn/prediction_5pexlggn_forggplot.png
+time ($BOXPLOT Plots/5pExonLength_Gn/prediction_5pexlggn_forggplot.tsv prediction fivep_exon_length_gn "5p exon length of genes (with spl str tr)" 0 500 Plots/5pExonLength_Gn/prediction_5pexlggn_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  7. transcript 3' exon length (for spliced and stranded tr)" >&2
-$BOXPLOT Plots/3pExonLength_Tr/prediction_3pexlgtr_forggplot.tsv prediction threep_exon_length_tr "3p exon length (spliced, stranded tr)" 0 500 Plots/3pExonLength_Tr/prediction_3pexlgtr_forggplot.png
+time ($BOXPLOT Plots/3pExonLength_Tr/prediction_3pexlgtr_forggplot.tsv prediction threep_exon_length_tr "3p exon length (spliced, stranded tr)" 0 500 Plots/3pExonLength_Tr/prediction_3pexlgtr_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  8. gene 3' exon length (for genes with spliced and stranded tr)" >&2
-$BOXPLOT Plots/3pExonLength_Gn/prediction_3pexlggn_forggplot.tsv prediction threep_exon_length_gn "3p exon length of genes (with spl str tr)" 0 500 Plots/3pExonLength_Gn/prediction_3pexlggn_forggplot.png
+time ($BOXPLOT Plots/3pExonLength_Gn/prediction_3pexlggn_forggplot.tsv prediction threep_exon_length_gn "3p exon length of genes (with spl str tr)" 0 500 Plots/3pExonLength_Gn/prediction_3pexlggn_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  9. internal exon length (for spliced and stranded tr)" >&2
-$BOXPLOT Plots/InternalExonLength/prediction_internexlg_forggplot.tsv prediction internal_exon_length "Internal exon length (spliced, stranded tr)" 0 260 Plots/InternalExonLength/prediction_internexlg_forggplot.png
+time ($BOXPLOT Plots/InternalExonLength/prediction_internexlg_forggplot.tsv prediction internal_exon_length "Internal exon length (spliced, stranded tr)" 0 260 Plots/InternalExonLength/prediction_internexlg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  10. distinct internal exon length (for spliced and stranded tr)" >&2
-$BOXPLOT Plots/DistinctInternalExonLength/prediction_distinternexlg_forggplot.tsv prediction distinct_internal_exon_length "Distinct internal exon length (spliced, stranded tr)" 0 260 Plots/DistinctInternalExonLength/prediction_distinternexlg_forggplot.png
+time ($BOXPLOT Plots/DistinctInternalExonLength/prediction_distinternexlg_forggplot.tsv prediction distinct_internal_exon_length "Distinct internal exon length (spliced, stranded tr)" 0 260 Plots/DistinctInternalExonLength/prediction_distinternexlg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  11. monoexonic transcript exon length" >&2
-$BOXPLOT Plots/MonoExTrExLength/prediction_monoextrexlg_forggplot.tsv prediction monoextr_exon_length "Monoexonic transcript exon length" 0 500 Plots/MonoExTrExLength/prediction_monoextrexlg_forggplot.png
+time ($BOXPLOT Plots/MonoExTrExLength/prediction_monoextrexlg_forggplot.tsv prediction monoextr_exon_length "Monoexonic transcript exon length" 0 500 Plots/MonoExTrExLength/prediction_monoextrexlg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  12. transcript length (exons + introns) (for spliced transcripts)" >&2
-$BOXPLOT Plots/TrLength/prediction_trlg_forggplot.tsv prediction transcript_length "Transcript length (exons + introns) (spliced tr)" 0 50000 Plots/TrLength/prediction_trlg_forggplot.png
+time ($BOXPLOT Plots/TrLength/prediction_trlg_forggplot.tsv prediction transcript_length "Transcript length (exons + introns) (spliced tr)" 0 50000 Plots/TrLength/prediction_trlg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "  13. cDNA length (exons only) (for spliced tr)" >&2
-$BOXPLOT Plots/cDNALength/prediction_cdnalg_forggplot.tsv prediction cDNA_length "cDNA length (only exons) (for spliced tr)" 0 4000 Plots/cDNALength/prediction_cdnalg_forggplot.png
+time ($BOXPLOT Plots/cDNALength/prediction_cdnalg_forggplot.tsv prediction cDNA_length "cDNA length (only exons) (for spliced tr)" 0 4000 Plots/cDNALength/prediction_cdnalg_forggplot.png) &>> debug_time.log
 echo "  done" >&2
 echo "done" >&2
 
@@ -555,7 +558,7 @@ echo "done" >&2
 # Make the plot for distance between predicted and reference TSS for exact transcripts
 ######################################################################################
 echo "I am making the plot for distance between predicted and reference TSS for exact transcripts" >&2
-$BOXPLOT Plots/Exact_tr_dist_to_Genc_TSS/prediction_tssdist_forggplot.tsv prediction dist_to_tss "Distance to reference TSS (exact tr)" 0 10 Plots/Exact_tr_dist_to_Genc_TSS/prediction_tssdist_forggplot.png
+time ($BOXPLOT Plots/Exact_tr_dist_to_Genc_TSS/prediction_tssdist_forggplot.tsv prediction dist_to_tss "Distance to reference TSS (exact tr)" 0 10 Plots/Exact_tr_dist_to_Genc_TSS/prediction_tssdist_forggplot.png) &>> debug_time.log
 echo "done" >&2
 
 # Clean

@@ -60,23 +60,27 @@ GFF2GFF=$rootDir/gff2gff.awk
 # a. Extract most 5' exons of transcripts
 #########################################
 echo I am extracting the most 5\' exons of transcripts from the annotation file >&2
-awk '(($3=="exon")&&(($7=="+")||($7=="-")))' $annotation | awk -f $MAKEOK | awk -v fldno=12 -f $EXTRACT5p | sort -V -k1,1 -k4,4n -k5,5n > $annotbase\_exons_most5p.gff
+echo "make_TSS... line 63" >> debug_time.log
+time (awk '(($3=="exon")&&(($7=="+")||($7=="-")))' $annotation | awk -f $MAKEOK | awk -v fldno=12 -f $EXTRACT5p | sort -V -k1,1 -k4,4n -k5,5n > $annotbase\_exons_most5p.gff) &>> debug_time.log
 echo done >&2
 
 # b. Then the most 5' bp of each transcript for each gene
 #########################################################
 echo I am extracting the most 5\' bp of each transcript for each gene, >&2
-awk '{($7=="+") ? tsspos=$4 : tsspos=$5; print $1, ".", "TSS", tsspos, tsspos, ".", $7, ".", "gene_id", $10, "tr_id", $12}' $annotbase\_exons_most5p.gff | awk -f $GFF2GFF | sort -V -k1,1 -k4,4n -k5,5n > $annotbase\_capped_sites.gff
+echo "make_TSS... line 70" >> debug_time.log
+time (awk '{($7=="+") ? tsspos=$4 : tsspos=$5; print $1, ".", "TSS", tsspos, tsspos, ".", $7, ".", "gene_id", $10, "tr_id", $12}' $annotbase\_exons_most5p.gff | awk -f $GFF2GFF | sort -V -k1,1 -k4,4n -k5,5n > $annotbase\_capped_sites.gff) &>> debug_time.log
 echo done >&2
 
 # c. Finally collapse per gene
 ##############################
 echo I am collapsing all TSSs per gene >&2
-cat $annotbase\_capped_sites.gff | awk -v to=10 -f $CUTGFF | sort -n | uniq -c | awk '{$1=""; print $0}' | awk -f $GFF2GFF | awk -v fileRef=$annotbase\_capped_sites.gff 'BEGIN{while (getline < fileRef >0){split($12,a,"\""); trlist[$1":"$4":"$5":"$7,$10]=(trlist[$1":"$4":"$5":"$7,$10])(a[2])(",");}} {$11="trlist"; $12="\""(trlist[$1":"$4":"$5":"$7,$10])"\"\;"; print $0}' | awk -f $GFF2GFF | sort -V -k1,1 -k4,4n -k5,5n > $annotbase\_capped_sites_nr.gff
+echo "make_TSS... line 77" >> debug_time.log
+time (cat $annotbase\_capped_sites.gff | awk -v to=10 -f $CUTGFF | sort -n | uniq -c | awk '{$1=""; print $0}' | awk -f $GFF2GFF | awk -v fileRef=$annotbase\_capped_sites.gff 'BEGIN{while (getline < fileRef >0){split($12,a,"\""); trlist[$1":"$4":"$5":"$7,$10]=(trlist[$1":"$4":"$5":"$7,$10])(a[2])(",");}} {$11="trlist"; $12="\""(trlist[$1":"$4":"$5":"$7,$10])"\"\;"; print $0}' | awk -f $GFF2GFF | sort -V -k1,1 -k4,4n -k5,5n > $annotbase\_capped_sites_nr.gff) &>> debug_time.log
 echo done >&2
 
 # d. Clean
 ###########
 echo I am cleaning >&2
-rm $annotbase\_exons_most5p.gff
+echo "make_TSS... line 84" >> debug_time.log
+time (rm $annotbase\_exons_most5p.gff) &>> debug_time.log
 echo done >&2
